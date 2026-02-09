@@ -141,8 +141,8 @@ export function PropertyPanel() {
                         <div className="pt-2 space-y-2">
                             <label className="text-[10px] text-muted-foreground">Dimensões do Slide</label>
                             <div className="grid grid-cols-2 gap-2 text-[10px] font-mono bg-muted/50 p-2 rounded">
-                                <div>W: {Math.round(selectedElement.width)}%</div>
-                                <div>H: {Math.round(selectedElement.height)}%</div>
+                                <div>W: {Math.round(selectedElement.width ?? 0)}%</div>
+                                <div>H: {Math.round(selectedElement.height ?? 0)}%</div>
                             </div>
                         </div>
                     </div>

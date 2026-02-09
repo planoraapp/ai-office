@@ -55,11 +55,11 @@ function EditableElement({ element, isSelected, onSelect, onChange }: EditableEl
             className={`absolute transition-shadow duration-200 ${isSelected ? 'ring-2 ring-primary ring-offset-1 z-20 shadow-lg' : 'hover:ring-1 hover:ring-primary/30 z-10'
                 }`}
             style={{
-                left: `${element.x}%`,
-                top: `${element.y}%`,
-                width: `${element.width}%`,
-                height: `${element.height}%`,
-                minHeight: element.type === 'text' ? `${element.height}%` : undefined,
+                left: `${element.x ?? 0}%`,
+                top: `${element.y ?? 0}%`,
+                width: `${element.width ?? 0}%`,
+                height: `${element.height ?? 0}%`,
+                minHeight: element.type === 'text' ? `${element.height ?? 0}%` : undefined,
                 cursor: isSelected ? 'move' : 'pointer'
             }}
             onClick={(e) => {
