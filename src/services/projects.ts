@@ -29,6 +29,7 @@ const PROJECTS_COLLECTION = 'projects';
 export const ProjectsService = {
     // Create a new project
     createProject: async (userId: string, data: Omit<Project, 'id' | 'userId' | 'createdAt'>) => {
+        if (!db) throw new Error("Database not initialized");
         try {
             const docRef = await addDoc(collection(db, PROJECTS_COLLECTION), {
                 ...data,
@@ -44,6 +45,7 @@ export const ProjectsService = {
 
     // Get all projects for a user
     getUserProjects: async (userId: string): Promise<Project[]> => {
+        if (!db) return [];
         try {
             const q = query(
                 collection(db, PROJECTS_COLLECTION),
@@ -72,6 +74,7 @@ export const ProjectsService = {
 
     // Get a single project
     getProject: async (projectId: string) => {
+        if (!db) return null;
         try {
             const docRef = doc(db, PROJECTS_COLLECTION, projectId);
             const docSnap = await getDoc(docRef);
@@ -90,6 +93,7 @@ export const ProjectsService = {
         }
     },
     deleteProject: async (projectId: string) => {
+        if (!db) return;
         try {
             await deleteDoc(doc(db, PROJECTS_COLLECTION, projectId));
         } catch (error) {

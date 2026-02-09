@@ -4,6 +4,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 export const StorageService = {
     // Upload a file to Firebase Storage
     async uploadFile(userId: string, file: File): Promise<string> {
+        if (!storage) throw new Error("Storage not initialized");
         try {
             const timestamp = Date.now();
             const path = `uploads/${userId}/${timestamp}_${file.name}`;

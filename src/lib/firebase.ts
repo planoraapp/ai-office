@@ -15,16 +15,18 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase (singleton pattern to avoid re-initialization)
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const app = getApps().length > 0
+    ? getApp()
+    : (firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null);
 
-// Initialize services
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
-let analytics = null;
+// Initialize services safely
+const auth = app ? getAuth(app) : null;
+const db = app ? getFirestore(app) : null;
+const storage = app ? getStorage(app) : null;
+let analytics: any = null;
 
 // Analytics only works in the browser
-if (typeof window !== "undefined") {
+if (app && typeof window !== "undefined") {
     isSupported().then((supported) => {
         if (supported) {
             analytics = getAnalytics(app);
