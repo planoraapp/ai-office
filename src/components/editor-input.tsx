@@ -19,7 +19,7 @@ export function EditorInput({ value, onChange, onSubmit, placeholder = "Descreva
 
     return (
         <div className="w-full">
-            <div className="bg-foreground/5 backdrop-blur-xl rounded-xl border border-foreground/10 shadow-lg transition-all duration-300 ease-out hover:shadow-2xl hover:bg-foreground/10 flex flex-col group focus-within:ring-1 focus-within:ring-primary/20">
+            <div className="bg-background rounded-xl border border-foreground/10 shadow-lg transition-all duration-300 ease-out hover:shadow-2xl hover:bg-muted/20 flex flex-col group focus-within:ring-1 focus-within:ring-primary/20">
                 <textarea
                     value={value}
                     onChange={(e) => onChange(e.target.value)}

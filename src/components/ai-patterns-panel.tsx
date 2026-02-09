@@ -27,7 +27,10 @@ export interface AIPatternsPanelProps {
     isGenerating: boolean;
     selectedThemeId: string;
     onThemeChange: (id: string) => void;
+    onLayoutSelect?: (layout: any) => void;
 }
+
+import { LayoutPicker } from './gamma/layout-picker';
 
 export function AIPatternsPanel({
     prompt,
@@ -35,7 +38,8 @@ export function AIPatternsPanel({
     onSubmit,
     isGenerating,
     selectedThemeId,
-    onThemeChange
+    onThemeChange,
+    onLayoutSelect
 }: AIPatternsPanelProps) {
     const [intent, setIntent] = useState<'generate' | 'condense' | 'preserve'>('generate');
     const [textAmount, setTextAmount] = useState<'min' | 'concise' | 'detailed' | 'extensive'>('detailed');
@@ -66,8 +70,8 @@ export function AIPatternsPanel({
     };
 
     return (
-        <div className="w-72 shrink-0 h-full border-r border-border bg-card overflow-y-auto custom-scrollbar flex flex-col">
-            <div className="p-4 border-b border-border bg-muted/30">
+        <div className="w-72 shrink-0 h-full border-r border-border bg-card flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-border bg-muted/30 shrink-0">
                 <h3 className="text-sm font-bold flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-primary" />
                     Personalização Visual
@@ -75,7 +79,7 @@ export function AIPatternsPanel({
                 <p className="text-[10px] text-muted-foreground mt-1">Configure o estilo e tom do documento</p>
             </div>
 
-            <div className="flex-1">
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
                 <Section id="content" title="Conteúdo" icon={AlignLeft}>
                     <div className="space-y-4">
                         <div className="flex bg-muted p-1 rounded-xl gap-1">
@@ -170,9 +174,17 @@ export function AIPatternsPanel({
                         ))}
                     </div>
                 </Section>
+
+                <Section id="layouts" title="Smart Layouts" icon={Layout}>
+                    {onLayoutSelect ? (
+                        <LayoutPicker onSelect={onLayoutSelect} />
+                    ) : (
+                        <p className="text-xs text-muted-foreground">Selecione um card para adicionar layouts.</p>
+                    )}
+                </Section>
             </div>
 
-            <div className="p-4 border-t border-border bg-muted/30 space-y-4">
+            <div className="p-4 border-t border-border bg-white space-y-4 shrink-0 z-10">
                 <div className="space-y-2">
                     <label className="text-[10px] font-bold text-muted-foreground uppercase">Comandos e Ajustes</label>
                     <EditorInput
@@ -193,6 +205,6 @@ export function AIPatternsPanel({
                     Aplicar Padrão
                 </button>
             </div>
-        </div>
+        </div >
     );
 }

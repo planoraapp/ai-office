@@ -2,8 +2,8 @@ import JSZip from 'jszip';
 
 export interface SlideElement {
     id: string;
-    type: 'text' | 'shape' | 'image' | 'list';
-    content: string;
+    type: 'text' | 'shape' | 'image' | 'list' | 'smart-layout';
+    content: string; // JSON string for smart-layout data if complex
     x?: number; // Optional for cards
     y?: number;
     width?: number;
@@ -14,6 +14,11 @@ export interface SlideElement {
     textAlign?: 'left' | 'center' | 'right';
     isHeading?: boolean;
     level?: number; // For headings
+    layoutData?: {
+        type: string; // e.g., 'columns', 'timeline', 'stats'
+        items: any[];
+        config?: any;
+    };
 }
 
 export type CardLayout = 'title' | 'content' | 'split' | 'blank' | 'agenda';

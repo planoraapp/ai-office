@@ -19,8 +19,8 @@ interface ExtractedContentPanelProps {
 
 export function ExtractedContentPanel({ content, images = [], fileName }: ExtractedContentPanelProps) {
     return (
-        <div className="flex-1 h-full border-r border-border bg-card overflow-y-auto custom-scrollbar flex flex-col">
-            <div className="p-4 border-b border-border sticky top-0 bg-card z-10">
+        <div className="flex-1 h-full border-r border-border bg-card flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-border sticky top-0 bg-card z-10 shrink-0">
                 <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-bold flex items-center gap-2">
                         <FileText className="w-4 h-4 text-primary" />
@@ -40,7 +40,7 @@ export function ExtractedContentPanel({ content, images = [], fileName }: Extrac
                 </div>
             </div>
 
-            <div className="p-4 space-y-6">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
                 {/* TEXT SECTION */}
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -51,9 +51,15 @@ export function ExtractedContentPanel({ content, images = [], fileName }: Extrac
                             {content ? content.split(' ').length : 0} palavras
                         </span>
                     </div>
-                    <div className="bg-muted/30 rounded-xl p-3 border border-border/50">
-                        <div className="text-[11px] leading-relaxed text-foreground/80 line-clamp-[15] whitespace-pre-wrap">
-                            {content || 'Nenhum texto extraído ainda. Carregue um documento para começar.'}
+                    <div className="bg-muted rounded-xl p-3 border border-border/50">
+                        <div className="text-[11px] leading-relaxed text-foreground/80 line-clamp-[15] space-y-2">
+                            {content ? (
+                                extractParagraphs(content).map((paragraph, index) => (
+                                    <p key={index}>{paragraph}</p>
+                                ))
+                            ) : (
+                                'Nenhum texto extraído ainda. Carregue um documento para começar.'
+                            )}
                         </div>
                         {content && (
                             <button className="w-full mt-3 py-1.5 border border-dashed border-border hover:border-primary/50 text-[10px] font-bold text-muted-foreground hover:text-primary transition-all flex items-center justify-center gap-2 rounded-lg">
@@ -88,19 +94,47 @@ export function ExtractedContentPanel({ content, images = [], fileName }: Extrac
                         </div>
                     )}
                 </div>
+            </div>
 
-                {/* SUGGESTION FOOTER */}
-                <div className="pt-4 mt-4 border-t border-border">
-                    <div className="bg-primary/5 rounded-xl p-3 border border-primary/10">
-                        <p className="text-[10px] text-primary font-medium flex items-center gap-1.5 mb-2">
-                            <Wand2 className="w-3 h-3" /> Dica da IA
-                        </p>
-                        <p className="text-[10px] text-primary/70 leading-normal">
-                            Você pode selecionar partes do texto ou imagens específicas para usar como base para novos slides.
-                        </p>
-                    </div>
+            {/* SUGGESTION FOOTER (FIXED) */}
+            <div className="p-4 border-t border-border bg-white shrink-0 z-10">
+                <div className="bg-muted rounded-xl p-3 border border-border">
+                    <p className="text-[10px] text-primary font-medium flex items-center gap-1.5 mb-2">
+                        <Wand2 className="w-3 h-3" /> Dica da IA
+                    </p>
+                    <p className="text-[10px] text-primary/70 leading-normal">
+                        Você pode selecionar partes do texto ou imagens específicas para usar como base para novos slides.
+                    </p>
                 </div>
             </div>
         </div>
     );
+}
+
+function extractParagraphs(html: string): string[] {
+    if (!html) return [];
+
+    // Create a temporary DOM parser
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    const paragraphs: string[] = [];
+
+    // Select all relevant block tags
+    const blocks = doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote');
+
+    blocks.forEach(block => {
+        const text = block.textContent?.trim();
+        if (text) {
+            paragraphs.push(text);
+        }
+    });
+
+    // If no blocks found (maybe just plain text or other structure), try body text
+    if (paragraphs.length === 0) {
+        const bodyText = doc.body.textContent?.trim();
+        if (bodyText) paragraphs.push(bodyText);
+    }
+
+    return paragraphs;
 }

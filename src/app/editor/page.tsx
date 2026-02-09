@@ -39,7 +39,9 @@ import { AISettings } from '@/components/ai-settings';
 import { useDocument } from '@/contexts/document-context';
 import { useAuth } from '@/contexts/auth-context';
 import { PptxParser } from '@/services/pptx-parser';
+import { GammaEditor } from '@/components/gamma/gamma-editor';
 import { DocxService } from '@/services/docx-service';
+import { HtmlToSlidesService } from '@/services/html-to-slides';
 import { AIPatternsPanel } from '@/components/ai-patterns-panel';
 import { ExtractedContentPanel } from '@/components/extracted-content-panel';
 import { FilmstripSidebar } from '@/components/filmstrip-sidebar';
@@ -94,7 +96,8 @@ export default function EditorPage() {
         setContent,
         content,
         viewStyle,
-        setViewStyle
+        setViewStyle,
+        addElement
     } = useDocument();
 
     const [prompt, setPrompt] = useState('');
@@ -151,6 +154,9 @@ export default function EditorPage() {
                         } else if (project.type === 'docx' && project.fileUrl) {
                             const htmlContent = await DocxService.convertToHtml(project.fileUrl);
                             setContent(htmlContent);
+                            // Parse for Gamma/Flow View
+                            const gammaSlides = HtmlToSlidesService.parse(htmlContent);
+                            setSlides(gammaSlides);
                         }
 
                         setState('editor');
@@ -228,6 +234,9 @@ export default function EditorPage() {
                 } else if (fileType === 'docx') {
                     const htmlContent = await DocxService.convertToHtml(file);
                     setContent(htmlContent);
+                    // Also parse for Gamma View
+                    const gammaSlides = HtmlToSlidesService.parse(htmlContent);
+                    setSlides(gammaSlides);
                 }
             } catch (error) {
                 console.error("Error saving project:", error);
@@ -257,62 +266,7 @@ export default function EditorPage() {
 
     return (
         <div className="h-screen bg-background flex overflow-hidden relative">
-            {/* Sidebar */}
-            <aside className="w-16 md:w-64 border-r border-border bg-card flex flex-col">
-                <div className="h-16 flex items-center px-4 border-b border-border">
-                    <div className="flex items-center gap-2 font-bold text-lg">
-                        <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-                            AI
-                        </div>
-                        <span className="hidden md:inline">OFFICE AI</span>
-                    </div>
-                </div>
 
-                <div className="px-4 py-3 space-y-2">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        {fileType === 'pptx' ? 'Apresentação' :
-                            fileType === 'xlsx' ? 'Planilha' :
-                                fileType === 'docx' ? 'Documento' :
-                                    fileType === 'pdf' ? 'PDF' : 'Arquivo'}
-                    </span>
-                    <button
-                        onClick={() => setShowGenerator(true)}
-                        className="w-full flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-bold hover:bg-primary/20 transition-all"
-                    >
-                        <Sparkles className="w-4 h-4" />
-                        Gerar novo com IA
-                    </button>
-                </div>
-
-                <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-                    {currentTools.map((tool) => {
-                        const Icon = tool.icon;
-                        const isActive = activeTool === tool.id;
-
-                        return (
-                            <button
-                                key={tool.id}
-                                onClick={() => setActiveTool(tool.id)}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
-                                    ? 'bg-primary text-primary-foreground shadow-sm'
-                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                    }`}
-                            >
-                                <Icon className="w-5 h-5 shrink-0" />
-                                <span className="hidden md:inline">{tool.label}</span>
-                            </button>
-                        );
-                    })}
-                </nav>
-
-                <div className="p-2 border-t border-border mt-auto space-y-1">
-
-                    <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
-                        <Settings className="w-5 h-5 shrink-0" />
-                        <span className="hidden md:inline">Configurações</span>
-                    </button>
-                </div>
-            </aside>
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col min-w-0 bg-muted/20">
@@ -344,24 +298,7 @@ export default function EditorPage() {
                             </button>
                         )}
 
-                        {fileType === 'docx' && state === 'editor' && (
-                            <div className="flex bg-muted p-1 rounded-lg">
-                                <button
-                                    onClick={() => setViewMode('faithful')}
-                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === 'faithful' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                                >
-                                    Vista Original
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('edit')}
-                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === 'edit' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                                >
-                                    Editar
-                                </button>
-                            </div>
-                        )}
-
-                        {state === 'editor' && fileType === 'pptx' && (
+                        {(fileType === 'docx' || fileType === 'pptx') && state === 'editor' && (
                             <div className="flex bg-muted p-1 rounded-lg border border-border mr-4">
                                 <button
                                     onClick={() => setViewStyle('flow')}
@@ -370,10 +307,27 @@ export default function EditorPage() {
                                     Fluxo de Cards
                                 </button>
                                 <button
-                                    onClick={() => setViewStyle('canvas')}
+                                    onClick={() => setViewStyle(fileType === 'pptx' ? 'canvas' : 'canvas')} // 'canvas' is default/classic view
                                     className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${viewStyle === 'canvas' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                                 >
-                                    Tela Inteira
+                                    {fileType === 'pptx' ? 'Tela Inteira' : 'Edição Clássica'}
+                                </button>
+                            </div>
+                        )}
+
+                        {(fileType === 'docx' || fileType === 'pptx') && state === 'editor' && (
+                            <div className="flex bg-muted p-1 rounded-lg border border-border mr-4">
+                                <button
+                                    onClick={() => setViewStyle('flow')}
+                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${viewStyle === 'flow' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                                >
+                                    Fluxo de Cards
+                                </button>
+                                <button
+                                    onClick={() => setViewStyle(fileType === 'pptx' ? 'canvas' : 'canvas')} // 'canvas' is default/classic view
+                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${viewStyle === 'canvas' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                                >
+                                    {fileType === 'pptx' ? 'Tela Inteira' : 'Edição Clássica'}
                                 </button>
                             </div>
                         )}
@@ -434,7 +388,7 @@ export default function EditorPage() {
 
 
                 <div className={`flex-1 overflow-hidden flex items-stretch relative ${state === 'upload' ? 'hidden' : ''}`}>
-                    {/* COLUMN 1: AI PATTERNS */}
+                    {/* COLUMN 1: AI PATTERNS (Left) */}
                     {state === 'editor' && (
                         <AIPatternsPanel
                             prompt={prompt}
@@ -443,25 +397,30 @@ export default function EditorPage() {
                             isGenerating={isGenerating}
                             selectedThemeId={selectedThemeId}
                             onThemeChange={setSelectedThemeId}
+                            onLayoutSelect={(layout) => {
+                                if (activeSlideId) {
+                                    addElement(activeSlideId, {
+                                        id: `smart_${Date.now()}`,
+                                        type: 'smart-layout',
+                                        content: 'Smart Layout',
+                                        layoutData: {
+                                            type: layout.type,
+                                            items: layout.defaultItems || [],
+                                            config: layout.config
+                                        }
+                                    });
+                                }
+                            }}
                         />
                     )}
 
-                    {/* COLUMN 2: EXTRACTED CONTENT */}
-                    {state === 'editor' && viewMode === 'faithful' && (
-                        <ExtractedContentPanel
-                            content={content || ''}
-                            fileName={file?.name}
-                            images={slides.flatMap(s => s.elements.filter(el => el.type === 'image').map(el => el.content))}
-                        />
-                    )}
-
-                    {/* COLUMN 3: FILMSTRIP NAV (Conditional) */}
+                    {/* COLUMN 2: FILMSTRIP NAV (Conditional - Left) */}
                     {state === 'editor' && fileType === 'pptx' && (
                         <FilmstripSidebar />
                     )}
 
-                    {/* COLUMN 4: CENTRAL WORKSPACE (PREVIEW/EDITOR) */}
-                    <div className="flex-1 h-full overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-slate-50/50 flex flex-col items-center">
+                    {/* COLUMN 3: CENTRAL WORKSPACE (PREVIEW/EDITOR - Center) */}
+                    <div className="flex-1 h-full overflow-y-auto p-8 custom-scrollbar bg-slate-100/50 flex flex-col items-center relative">
                         {/* FLOATING AI SETTINGS (ABOVE PAGE) */}
                         {showSettings && (
                             <div className="absolute top-4 right-4 z-50 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -469,32 +428,44 @@ export default function EditorPage() {
                             </div>
                         )}
 
-                        {/* NATIVE INTERACTIVE CANVAS (For PPTX) */}
+                        {/* NATIVE INTERACTIVE CANVAS & FLOW (For PPTX) */}
                         {state === 'editor' && fileType === 'pptx' && slides.length > 0 && (
-                            <div className="w-full flex flex-col items-center space-y-8 pb-32">
-                                {slides.map((slide, idx) => (
-                                    <div key={slide.id} className="w-full max-w-4xl">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Página {idx + 1}</span>
-                                            <div className="h-[1px] flex-1 mx-4 bg-border/50"></div>
-                                        </div>
-                                        <div className="aspect-[16/9] shadow-2xl rounded-xl overflow-hidden bg-white ring-1 ring-border/50">
-                                            <DocumentCanvas slide={slide} />
-                                        </div>
+                            <>
+                                {viewStyle === 'flow' ? (
+                                    <GammaEditor fileType={fileType} />
+                                ) : (
+                                    <div className="w-full flex flex-col items-center space-y-8 pb-32">
+                                        {slides.map((slide, idx) => (
+                                            <div key={slide.id} className="w-full max-w-5xl">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Slide {idx + 1}</span>
+                                                    <div className="h-[1px] flex-1 mx-4 bg-border/50"></div>
+                                                </div>
+                                                <div className="aspect-[16/9] shadow-2xl rounded-xl overflow-hidden bg-white ring-1 ring-border/50">
+                                                    <DocumentCanvas slide={slide} />
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
+                                )}
+                            </>
                         )}
 
                         {/* NATIVE WORD EDITOR (For DOCX) */}
                         {state === 'editor' && fileType === 'docx' && content && (
-                            <div className="w-full max-w-4xl bg-white shadow-2xl rounded-xl overflow-hidden ring-1 ring-border/50 mb-32">
-                                {viewMode === 'edit' ? (
-                                    <WordEditor />
+                            <>
+                                {viewStyle === 'flow' ? (
+                                    <GammaEditor fileType={fileType} />
                                 ) : (
-                                    <DocxFaithfulViewer fileUrl={uploadedUrl!} />
+                                    <div className="w-[794px] min-h-[1123px] bg-white shadow-2xl mb-32 p-8 ring-1 ring-border/50">
+                                        {viewMode === 'edit' ? (
+                                            <WordEditor />
+                                        ) : (
+                                            <DocxFaithfulViewer fileUrl={uploadedUrl!} />
+                                        )}
+                                    </div>
                                 )}
-                            </div>
+                            </>
                         )}
 
                         {/* NATIVE EXCEL EDITOR (For XLSX) */}
@@ -531,6 +502,15 @@ export default function EditorPage() {
                             </div>
                         )}
                     </div>
+
+                    {/* COLUMN 4: EXTRACTED CONTENT (Right) */}
+                    {state === 'editor' && viewMode === 'faithful' && (
+                        <ExtractedContentPanel
+                            content={content || ''}
+                            fileName={file?.name}
+                            images={slides.flatMap(s => s.elements.filter(el => el.type === 'image').map(el => el.content))}
+                        />
+                    )}
                 </div>
             </main>
 
