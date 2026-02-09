@@ -11,6 +11,23 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { TextAlign } from '@tiptap/extension-text-align';
+import {
+    Bold,
+    Italic,
+    List,
+    ListOrdered,
+    Quote,
+    Undo,
+    Redo,
+    AlignCenter,
+    AlignLeft,
+    AlignRight,
+    Type,
+    Heading1,
+    Heading2,
+    Heading3,
+    Highlighter
+} from 'lucide-react';
 import { useDocument } from '@/contexts/document-context';
 
 export function WordEditor() {
@@ -83,12 +100,94 @@ export function WordEditor() {
         );
     }
 
+    const ToolbarButton = ({ onClick, isActive, icon: Icon, title }: any) => (
+        <button
+            onClick={onClick}
+            title={title}
+            className={`p-2 rounded-lg transition-all ${isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+        >
+            <Icon className="w-4 h-4" />
+        </button>
+    );
+
     return (
-        <div className="w-full h-full bg-[#f8f9fa] overflow-y-auto custom-scrollbar p-12">
-            <div className="flex flex-col items-center min-h-screen">
+        <div className="w-full h-full bg-[#f8f9fa] overflow-y-auto custom-scrollbar flex flex-col items-center">
+            {/* STICKY TOOLBAR */}
+            <div className="sticky top-0 z-50 w-full max-w-[816px] bg-white/80 backdrop-blur-md border border-border rounded-b-xl shadow-lg p-2 flex items-center gap-1 mb-8 mt-4 ring-1 ring-black/5">
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleBold().run()}
+                    isActive={editor.isActive('bold')}
+                    icon={Bold}
+                    title="Negrito"
+                />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                    isActive={editor.isActive('italic')}
+                    icon={Italic}
+                    title="Itálico"
+                />
+                <div className="w-[1px] h-4 bg-border mx-1" />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().setParagraph().run()}
+                    isActive={editor.isActive('paragraph')}
+                    icon={Type}
+                    title="Parágrafo"
+                />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                    isActive={editor.isActive('heading', { level: 1 })}
+                    icon={Heading1}
+                    title="Título 1"
+                />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                    isActive={editor.isActive('heading', { level: 2 })}
+                    icon={Heading2}
+                    title="Título 2"
+                />
+                <div className="w-[1px] h-4 bg-border mx-1" />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                    isActive={editor.isActive({ textAlign: 'left' })}
+                    icon={AlignLeft}
+                    title="Alinhar Esquerda"
+                />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                    isActive={editor.isActive({ textAlign: 'center' })}
+                    icon={AlignCenter}
+                    title="Centralizar"
+                />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                    isActive={editor.isActive({ textAlign: 'right' })}
+                    icon={AlignRight}
+                    title="Alinhar Direita"
+                />
+                <div className="w-[1px] h-4 bg-border mx-1" />
+                <ToolbarButton
+                    onClick={() => editor.chain().focus().toggleBulletList().run()}
+                    isActive={editor.isActive('bulletList')}
+                    icon={List}
+                    title="Lista"
+                />
+                <div className="ml-auto flex gap-1">
+                    <ToolbarButton
+                        onClick={() => editor.chain().focus().undo().run()}
+                        icon={Undo}
+                        title="Desfazer"
+                    />
+                    <ToolbarButton
+                        onClick={() => editor.chain().focus().redo().run()}
+                        icon={Redo}
+                        title="Refazer"
+                    />
+                </div>
+            </div>
+
+            <div className="w-full max-w-[816px] bg-white shadow-2xl ring-1 ring-black/5 mb-32 min-h-[1056px] relative p-0">
                 <EditorContent editor={editor} />
             </div>
-            {/* Toolbar is in the Property Panel or top toolbar */}
         </div>
     );
 }

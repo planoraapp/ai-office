@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     Palette,
     Type,
@@ -21,36 +22,31 @@ import {
     Upload,
     Plus,
     Loader2,
-    Sparkles
+    Sparkles,
+    Settings2,
+    Wand2,
+    Sparkles as SparklesIcon
 } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+
 import { FileUpload } from '@/components/file-upload';
 import { ProcessingView, FileType } from '@/components/processing-view';
 import { EditorInput } from '@/components/editor-input';
-import { PdfSidebar } from '@/components/pdf-sidebar';
-import { DocumentSidebar } from '@/components/document-sidebar';
 import { DocumentCanvas } from '@/components/document-canvas';
-import { CardFlow } from '@/components/card-flow';
 import { WordEditor } from '@/components/word-editor';
 import { DocxFaithfulViewer } from '@/components/docx-faithful-viewer';
-import { PropertyPanel } from '@/components/property-panel';
 import { AIDocumentGenerator } from '@/components/ai-generator';
 import { AISettings } from '@/components/ai-settings';
 import { useDocument } from '@/contexts/document-context';
+import { useAuth } from '@/contexts/auth-context';
 import { PptxParser } from '@/services/pptx-parser';
 import { DocxService } from '@/services/docx-service';
-import {
-    Settings2,
-    Sparkles as SparklesIcon,
-    Wand2
-} from 'lucide-react';
-import { useAuth } from '@/contexts/auth-context';
+import { AIPatternsPanel } from '@/components/ai-patterns-panel';
+import { ExtractedContentPanel } from '@/components/extracted-content-panel';
 import { ProjectsService } from '@/services/projects';
 import { StorageService } from '@/services/storage';
 
 type EditorState = 'upload' | 'processing' | 'editor';
 
-// Define toolsets for each file type
 // Define toolsets for each file type
 const TOOL_SETS = {
     pptx: [
@@ -107,7 +103,7 @@ export default function EditorPage() {
     const projectId = searchParams.get('project');
 
     // Initial Auth Check
-    React.useEffect(() => {
+    useEffect(() => {
         if (!user) {
             console.log("No user found in Editor, redirecting to login...");
             // router.push('/'); // Commented out to prevent flicker if auth is just loading
@@ -115,7 +111,7 @@ export default function EditorPage() {
     }, [user, router]);
 
     // Load Project from URL
-    React.useEffect(() => {
+    useEffect(() => {
         async function loadProject() {
             if (projectId && user) {
                 try {
@@ -417,30 +413,29 @@ export default function EditorPage() {
                     </div>
                 )}
 
-                <div className={`flex-1 overflow-auto p-4 sm:p-8 flex items-start justify-center gap-6 relative ${state === 'upload' ? 'hidden' : ''}`}>
-                    {/* THUMBNAILS SIDEBAR */}
-                    {state === 'editor' && (uploadedUrl || slides.length > 0 || content) && (
-                        <>
-                            {fileType === 'pdf' ? (
-                                <PdfSidebar
-                                    fileUrl={uploadedUrl || ''}
-                                    activePage={activeSlideId}
-                                    onPageClick={setActiveSlideId}
-                                />
-                            ) : ['pptx', 'docx', 'xlsx'].includes(fileType) ? (
-                                <DocumentSidebar
-                                    fileUrl={uploadedUrl || ''}
-                                    fileType={fileType as any}
-                                    activePage={activeSlideId}
-                                    onPageClick={setActiveSlideId}
-                                    slides={slides}
-                                />
-                            ) : null}
-                        </>
+
+                <div className={`flex-1 overflow-hidden flex items-stretch relative ${state === 'upload' ? 'hidden' : ''}`}>
+                    {/* COLUMN 1: AI PATTERNS */}
+                    {state === 'editor' && (
+                        <AIPatternsPanel
+                            prompt={prompt}
+                            setPrompt={setPrompt}
+                            onSubmit={handlePromptSubmit}
+                            isGenerating={isGenerating}
+                        />
                     )}
 
-                    {/* CENTRAL WORKSPACE */}
-                    <div className="flex-1 h-full min-h-[600px] relative flex flex-col items-center">
+                    {/* COLUMN 2: EXTRACTED CONTENT */}
+                    {state === 'editor' && (
+                        <ExtractedContentPanel
+                            content={content || ''}
+                            fileName={file?.name}
+                            images={slides.flatMap(s => s.elements.filter(el => el.type === 'image').map(el => el.content))}
+                        />
+                    )}
+
+                    {/* COLUMN 3: CENTRAL WORKSPACE (PREVIEW/EDITOR) */}
+                    <div className="flex-[2.5] h-full overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-muted/30 flex flex-col items-center">
                         {/* FLOATING AI SETTINGS (ABOVE PAGE) */}
                         {showSettings && (
                             <div className="absolute top-4 right-4 z-50 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -450,20 +445,24 @@ export default function EditorPage() {
 
                         {/* NATIVE INTERACTIVE CANVAS (For PPTX) */}
                         {state === 'editor' && fileType === 'pptx' && slides.length > 0 && (
-                            <>
-                                {viewStyle === 'flow' ? (
-                                    <CardFlow />
-                                ) : (
-                                    <div className="w-full max-w-5xl aspect-[16/9] shadow-xl rounded-lg overflow-hidden bg-white">
-                                        <DocumentCanvas slide={slides[activeSlideId - 1]} />
+                            <div className="w-full flex flex-col items-center space-y-8 pb-32">
+                                {slides.map((slide, idx) => (
+                                    <div key={slide.id} className="w-full max-w-4xl">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Página {idx + 1}</span>
+                                            <div className="h-[1px] flex-1 mx-4 bg-border/50"></div>
+                                        </div>
+                                        <div className="aspect-[16/9] shadow-2xl rounded-xl overflow-hidden bg-white ring-1 ring-border/50">
+                                            <DocumentCanvas slide={slide} />
+                                        </div>
                                     </div>
-                                )}
-                            </>
+                                ))}
+                            </div>
                         )}
 
                         {/* NATIVE WORD EDITOR (For DOCX) */}
                         {state === 'editor' && fileType === 'docx' && content && (
-                            <div className="w-full h-full shadow-xl rounded-lg overflow-hidden bg-white">
+                            <div className="w-full max-w-4xl bg-white shadow-2xl rounded-xl overflow-hidden ring-1 ring-border/50 mb-32">
                                 {viewMode === 'edit' ? (
                                     <WordEditor />
                                 ) : (
@@ -472,65 +471,43 @@ export default function EditorPage() {
                             </div>
                         )}
 
-                        {/* NATIVE EXCEL EDITOR (For XLSX) - Placeholder for now */}
+                        {/* NATIVE EXCEL EDITOR (For XLSX) */}
                         {state === 'editor' && fileType === 'xlsx' && (
-                            <div className="w-full h-full shadow-xl rounded-lg overflow-hidden bg-white flex items-center justify-center">
+                            <div className="w-full max-w-5xl h-[80vh] shadow-2xl rounded-xl overflow-hidden bg-white ring-1 ring-border/50 flex items-center justify-center">
                                 <div className="text-center">
-                                    <Table className="w-12 h-12 text-green-600 mx-auto mb-4" />
+                                    <Table className="w-12 h-12 text-green-600 mx-auto mb-4 opacity-40" />
                                     <h3 className="text-lg font-semibold">Motor Excel Nativo Ativo</h3>
                                     <p className="text-sm text-muted-foreground">Grid de dados interativo em fase Pilot.</p>
                                 </div>
                             </div>
                         )}
 
-                        {/* UNIVERSAL DOCUMENT VIEWER (Google Docs Viewer) - Fallback for non-native supported types */}
+                        {/* UNIVERSAL DOCUMENT VIEWER (Google Docs Viewer) */}
                         {state === 'editor' && fileType === 'pdf' && (
-                            <div className="w-full h-full shadow-xl rounded-lg overflow-hidden bg-white flex flex-col">
+                            <div className="w-full max-w-5xl h-[80vh] shadow-2xl rounded-xl overflow-hidden bg-white ring-1 ring-border/50 flex flex-col">
                                 {uploadedUrl ? (
-                                    <>
-                                        <iframe
-                                            src={`https://docs.google.com/gview?url=${encodeURIComponent(uploadedUrl)}&embedded=true`}
-                                            width="100%"
-                                            height="100%"
-                                            frameBorder="0"
-                                            title="Document Viewer"
-                                            className="flex-1"
-                                        >
-                                            Este navegador não suporta a visualização de arquivos.
-                                        </iframe>
-                                    </>
+                                    <iframe
+                                        src={`https://docs.google.com/gview?url=${encodeURIComponent(uploadedUrl)}&embedded=true`}
+                                        width="100%"
+                                        height="100%"
+                                        frameBorder="0"
+                                        title="Document Viewer"
+                                        className="flex-1"
+                                    >
+                                        Este navegador não suporta a visualização de arquivos.
+                                    </iframe>
                                 ) : (
                                     <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8 text-center">
                                         <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4" />
                                         <p>Preparando visualização...</p>
-                                        <p className="text-sm opacity-70 mt-2">Enviando para o visualizador seguro...</p>
                                     </div>
                                 )}
                             </div>
                         )}
                     </div>
-
-                    {/* PROPERTY PANEL (Right Sidebar) REMOVED AS PER USER REQUEST */}
                 </div>
             </main>
 
-            {/* AI INPUT OVERLAY */}
-            {state === 'editor' && (
-                <div className="absolute bottom-0 left-0 right-0 p-4 z-40 bg-gradient-to-t from-background via-background/80 to-transparent">
-                    <div className="max-w-7xl mx-auto flex gap-6">
-                        {/* Spacer to push AI input away from sidebars if needed, or just center it */}
-                        <div className="hidden lg:block w-48 shrink-0" />
-                        <div className="flex-1 max-w-5xl">
-                            <EditorInput
-                                value={prompt}
-                                onChange={setPrompt}
-                                onSubmit={handlePromptSubmit}
-                                isProcessing={isGenerating}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Floating Action Button for New File - Only show in Upload mode */}
             {state !== 'editor' && (
