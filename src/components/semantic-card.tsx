@@ -3,6 +3,7 @@
 import React from 'react';
 import { SlideData, SlideElement } from '@/services/pptx-parser';
 import { useDocument } from '@/contexts/document-context';
+import { Plus, Sparkles } from 'lucide-react';
 
 interface SemanticCardProps {
     slide: SlideData;
@@ -99,49 +100,80 @@ export function SemanticCard({ slide, index }: SemanticCardProps) {
     };
 
     return (
-        <div
-            id={`slide-${slide.id}`}
-            className={`w-full max-w-4xl mx-auto mb-12 rounded-2xl transition-all duration-300 border-2 cursor-pointer
-                ${isActive ? 'border-primary ring-4 ring-primary/10' : 'border-transparent hover:border-muted-foreground/20'}
-                bg-white shadow-xl overflow-hidden`}
-            onClick={() => {
-                setActiveSlideId(slide.id);
-                setSelectedElementId(null);
-            }}
-        >
-            <div className="relative group">
-                {/* Visual Accent */}
-                <div
-                    className="absolute top-0 left-0 w-1 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ backgroundColor: slide.accentColor }}
-                />
-
-                {/* Background (if any) */}
-                {slide.backgroundUrl && (
-                    <div
-                        className="absolute inset-0 opacity-10 pointer-events-none bg-cover bg-center"
-                        style={{ backgroundImage: `url(${slide.backgroundUrl})` }}
-                    />
-                )}
-
-                <div className="relative z-10">
-                    {renderLayout()}
-                </div>
-
-                {/* Card Controls (visible on hover) */}
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                    <button className="p-2 bg-muted rounded-md hover:bg-muted/80 text-xs font-medium shadow-sm">
-                        Editar Layout
-                    </button>
-                    <button className="p-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 text-xs font-medium shadow-sm">
-                        IA ✨
-                    </button>
-                </div>
+        <div className="relative group/card-container w-full max-w-4xl mx-auto mb-8">
+            {/* Card Divider (Insert before) */}
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 opacity-0 group-hover/card-container:opacity-100 transition-all duration-200 z-30 scale-90 hover:scale-100">
+                <button className="flex items-center gap-2 px-3 py-1 bg-white border border-primary/20 text-primary rounded-full shadow-lg text-[10px] font-bold hover:bg-primary hover:text-white transition-all">
+                    <Plus className="w-3 h-3" />
+                    Inserir Cartão
+                </button>
             </div>
 
-            <div className="px-6 py-3 bg-muted/30 border-t border-border flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
-                <span>Cartão {index + 1}</span>
-                <span>{slide.layout}</span>
+            <div
+                id={`slide-${slide.id}`}
+                className={`w-full rounded-2xl transition-all duration-500 border-2 cursor-pointer
+                    ${isActive ? 'border-primary ring-8 ring-primary/5 shadow-2xl scale-[1.01]' : 'border-transparent hover:border-muted-foreground/10 hover:shadow-xl'}
+                    bg-white overflow-hidden relative`}
+                onClick={() => {
+                    setActiveSlideId(slide.id);
+                    setSelectedElementId(null);
+                }}
+            >
+                {/* Status Bar / Label */}
+                {slide.label && (
+                    <div className="absolute top-6 left-8 z-20">
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full backdrop-blur-md border border-primary/20 animate-in fade-in slide-in-from-left-4 duration-500">
+                            <Sparkles className="w-3 h-3" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">{slide.label}</span>
+                        </div>
+                    </div>
+                )}
+
+                <div className="relative group">
+                    {/* Visual Accent */}
+                    <div
+                        className="absolute top-0 left-0 w-1.5 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ backgroundColor: slide.accentColor || 'var(--primary)' }}
+                    />
+
+                    {/* Background (if any) */}
+                    {slide.backgroundUrl && (
+                        <div
+                            className="absolute inset-0 opacity-5 pointer-events-none bg-cover bg-center"
+                            style={{ backgroundImage: `url(${slide.backgroundUrl})` }}
+                        />
+                    )}
+
+                    <div className={`relative z-10 ${slide.label ? 'pt-16' : ''}`}>
+                        {renderLayout()}
+                    </div>
+
+                    {/* Card Controls (visible on hover) */}
+                    <div className="absolute top-6 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 flex gap-2 translate-y-2 group-hover:translate-y-0">
+                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/80 backdrop-blur-md rounded-lg hover:bg-muted text-[10px] font-bold shadow-sm transition-all border border-border/50">
+                            Layout
+                        </button>
+                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-[10px] font-bold shadow-lg transition-all border border-primary/20">
+                            <Sparkles className="w-3 h-3" />
+                            IA
+                        </button>
+                    </div>
+                </div>
+
+                <div className="px-8 py-4 bg-muted/20 border-t border-border/50 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-foreground/5 text-[10px] font-bold text-muted-foreground">
+                            {index + 1}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-60">
+                            {slide.layout}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm" />
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">Salvo</span>
+                    </div>
+                </div>
             </div>
         </div>
     );

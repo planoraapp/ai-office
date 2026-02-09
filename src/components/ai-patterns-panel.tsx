@@ -18,26 +18,31 @@ import {
 } from 'lucide-react';
 
 import { EditorInput } from './editor-input';
-
-const THEMES = [
-    { id: 'ash', name: 'Ash', preview: 'https://assets.api.gamma.app/themes/preview/v1/ash/null' },
-    { id: 'gold-leaf', name: 'Gold Leaf', preview: 'https://assets.api.gamma.app/themes/preview/v1/gold-leaf/07897491194d75694b2f41c888098b6309edf58f' },
-    { id: 'piano', name: 'Piano', preview: 'https://assets.api.gamma.app/themes/preview/v1/piano/null' },
-];
+import { StyleService } from '@/services/style-service';
 
 export interface AIPatternsPanelProps {
     prompt: string;
     setPrompt: (val: string) => void;
     onSubmit: () => void;
     isGenerating: boolean;
+    selectedThemeId: string;
+    onThemeChange: (id: string) => void;
 }
 
-export function AIPatternsPanel({ prompt, setPrompt, onSubmit, isGenerating }: AIPatternsPanelProps) {
+export function AIPatternsPanel({
+    prompt,
+    setPrompt,
+    onSubmit,
+    isGenerating,
+    selectedThemeId,
+    onThemeChange
+}: AIPatternsPanelProps) {
     const [intent, setIntent] = useState<'generate' | 'condense' | 'preserve'>('generate');
     const [textAmount, setTextAmount] = useState<'min' | 'concise' | 'detailed' | 'extensive'>('detailed');
     const [format, setFormat] = useState<'presentation' | 'webpage' | 'document' | 'social'>('presentation');
-    const [selectedTheme, setSelectedTheme] = useState('ash');
     const [openSections, setOpenSections] = useState<string[]>(['content', 'visuals']);
+
+    const themes = StyleService.getAllThemes();
 
     const toggleSection = (id: string) => {
         setOpenSections(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
@@ -65,7 +70,7 @@ export function AIPatternsPanel({ prompt, setPrompt, onSubmit, isGenerating }: A
             <div className="p-4 border-b border-border bg-muted/30">
                 <h3 className="text-sm font-bold flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-primary" />
-                    Padrões IA
+                    Personalização Visual
                 </h3>
                 <p className="text-[10px] text-muted-foreground mt-1">Configure o estilo e tom do documento</p>
             </div>
@@ -117,22 +122,27 @@ export function AIPatternsPanel({ prompt, setPrompt, onSubmit, isGenerating }: A
                     </div>
                 </Section>
 
-                <Section id="visuals" title="Visual" icon={Palette}>
-                    <div className="grid grid-cols-1 gap-2">
-                        {THEMES.map(theme => (
+                <Section id="visuals" title="Temas Visuais" icon={Palette}>
+                    <div className="space-y-3">
+                        {themes.map(theme => (
                             <button
                                 key={theme.id}
-                                onClick={() => setSelectedTheme(theme.id)}
-                                className={`relative rounded-xl overflow-hidden aspect-[16/6] border-2 transition-all
-                                    ${selectedTheme === theme.id ? 'border-primary' : 'border-border hover:border-primary/50'}`}
+                                onClick={() => onThemeChange(theme.id)}
+                                className={`w-full p-3 rounded-xl border-2 text-left transition-all group
+                                    ${selectedThemeId === theme.id ? 'border-primary bg-primary/5 shadow-md' : 'border-border hover:border-primary/30 hover:bg-muted/50'}`}
                             >
-                                <img src={theme.preview} className="w-full h-full object-cover" alt={theme.name} />
-                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                                    <span className="text-[10px] font-bold text-white drop-shadow-md">{theme.name}</span>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">{theme.name}</span>
+                                    <div className="flex gap-1">
+                                        <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: theme.primaryColor }} />
+                                        <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: theme.secondaryColor }} />
+                                    </div>
                                 </div>
-                                {selectedTheme === theme.id && (
-                                    <div className="absolute top-1 right-1 bg-primary rounded-full p-0.5">
-                                        <Check className="w-2 h-2 text-white" />
+                                <p className="text-[9px] text-muted-foreground leading-tight">{theme.description}</p>
+                                {selectedThemeId === theme.id && (
+                                    <div className="mt-2 flex items-center gap-1.5 text-[9px] font-bold text-primary animate-in fade-in slide-in-from-left-2">
+                                        <Check className="w-3 h-3" />
+                                        Ativo
                                     </div>
                                 )}
                             </button>

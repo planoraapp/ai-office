@@ -21,6 +21,7 @@ export type CardLayout = 'title' | 'content' | 'split' | 'blank' | 'agenda';
 export interface SlideData {
     id: number;
     layout: CardLayout;
+    label?: string; // e.g., "Fundação", "Legal"
     elements: SlideElement[];
     accentColor?: string;
     backgroundUrl?: string;

@@ -42,6 +42,9 @@ import { PptxParser } from '@/services/pptx-parser';
 import { DocxService } from '@/services/docx-service';
 import { AIPatternsPanel } from '@/components/ai-patterns-panel';
 import { ExtractedContentPanel } from '@/components/extracted-content-panel';
+import { FilmstripSidebar } from '@/components/filmstrip-sidebar';
+import { StyleService } from '@/services/style-service';
+import { DocxExportService } from '@/services/docx-export-service';
 import { ProjectsService } from '@/services/projects';
 import { StorageService } from '@/services/storage';
 
@@ -97,6 +100,19 @@ export default function EditorPage() {
     const [prompt, setPrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [showGenerator, setShowGenerator] = useState(false);
+    const [selectedThemeId, setSelectedThemeId] = useState('modern');
+
+    const handleExport = async () => {
+        if (!slides.length) return;
+
+        try {
+            const theme = StyleService.getTheme(selectedThemeId);
+            await DocxExportService.exportToDocx(slides, theme, `${file?.name || 'Documento'}.docx`);
+        } catch (error) {
+            console.error("Export failed:", error);
+            // Could add a toast notification here
+        }
+    };
     const [showSettings, setShowSettings] = useState(false);
 
     const searchParams = useSearchParams();
@@ -364,7 +380,10 @@ export default function EditorPage() {
                         <button className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                             Visualizar
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm">
+                        <button
+                            onClick={handleExport}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
+                        >
                             <Download className="w-4 h-4" />
                             <span>Exportar</span>
                         </button>
@@ -422,11 +441,13 @@ export default function EditorPage() {
                             setPrompt={setPrompt}
                             onSubmit={handlePromptSubmit}
                             isGenerating={isGenerating}
+                            selectedThemeId={selectedThemeId}
+                            onThemeChange={setSelectedThemeId}
                         />
                     )}
 
                     {/* COLUMN 2: EXTRACTED CONTENT */}
-                    {state === 'editor' && (
+                    {state === 'editor' && viewMode === 'faithful' && (
                         <ExtractedContentPanel
                             content={content || ''}
                             fileName={file?.name}
@@ -434,8 +455,13 @@ export default function EditorPage() {
                         />
                     )}
 
-                    {/* COLUMN 3: CENTRAL WORKSPACE (PREVIEW/EDITOR) */}
-                    <div className="flex-[2.5] h-full overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-muted/30 flex flex-col items-center">
+                    {/* COLUMN 3: FILMSTRIP NAV (Conditional) */}
+                    {state === 'editor' && fileType === 'pptx' && (
+                        <FilmstripSidebar />
+                    )}
+
+                    {/* COLUMN 4: CENTRAL WORKSPACE (PREVIEW/EDITOR) */}
+                    <div className="flex-1 h-full overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-slate-50/50 flex flex-col items-center">
                         {/* FLOATING AI SETTINGS (ABOVE PAGE) */}
                         {showSettings && (
                             <div className="absolute top-4 right-4 z-50 animate-in fade-in slide-in-from-right-4 duration-300">
